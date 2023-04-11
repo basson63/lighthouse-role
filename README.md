@@ -182,6 +182,6 @@ DevOps инженер должен обеспечить эффективное �
 - terraform.rc
 
 - dir1/terraform.rc
-
+ 
 - dir2/dir3/terraform.rc
 
