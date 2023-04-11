@@ -6,23 +6,23 @@
 
 - Terraform
 
-![Терраформ](1.1/img/tf.jpg)
+![Терраформ](img/tf.jpg)
 
 - Bash
 
-![bash](1.1/img/sh.jpg)
+![bash](/img/sh.jpg)
 
 - Markdown
 
-![markdown](1.1/img/md.jpg)
+![markdown](img/md.jpg)
 
 - Yaml
 
-![yaml](1.1/img/yaml.jpg)
+![yaml](img/yaml.jpg)
 
 - Jsonnet
 
-![jsonnet](1.1/img/jsonnet.jpg)
+![jsonnet](img/jsonnet.jpg)
 
 ---
 
