@@ -47,3 +47,9 @@ git switch -c fix
 ```bash
 git push -u origin fix
 ```
+
+6. Посмотрите, как визуально выглядит ваша схема коммитов: https://github.com/basson63/devops-netology-29/network.
+
+7. Теперь измените содержание файла README.md, добавив новую строчку.
+
+8. Отправьте изменения в репозиторий и посмотрите, как изменится схема на странице https://github.com/basson63/devops-netology-29/network и как изменится вывод команды git log
