@@ -67,3 +67,4 @@ git push -u origin fix
  
 ## Задание 4. Упрощаем себе жизнь
 
+![IDE](img/2.2.jpg)
