@@ -1,5 +1,15 @@
 # Домашнее задание по теме «Основы Git»
 
+## Задание 1. Знакомимся с GitLab и Bitbucket
+
+$ git remote -v
+gitlab  https://gitlab.com/basson63/devops-netology.git (fetch)
+gitlab  https://gitlab.com/basson63/devops-netology.git (push)
+origin  https://github.com/basson63/devops-netology-29.git (fetch)
+origin  https://github.com/basson63/devops-netology-29.git (push)
+
+## Задание 2. Теги
+
 1. Создайте легковестный тег v0.0 на HEAD коммите и запуште его во все три добавленных на предыдущем этапе upstream.
 
 ```bash
