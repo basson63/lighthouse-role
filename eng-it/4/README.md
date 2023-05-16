@@ -9,8 +9,8 @@ Steps to reproduce:
 •go to footer
 •click the sign up button
 
-## Задание
-# Сделайте упражнение ниже (нужно переделать предложения в пассивный залог):
+# Задание
+## Сделайте упражнение ниже (нужно переделать предложения в пассивный залог):
 
 1) I hope I will invited by HR to the technical interview.
 2) The first commercial computer has been released by Apple in 1983
@@ -24,8 +24,12 @@ Steps to reproduce:
 10) The project was released.
 
 
-## Задание
-# Напишите свой bug report на примере реального бага, с которым работали или выберите один из багов из списка ниже.
+# Задание
+## Ответьте на следующие вопросы (напишите текст или запишите аудио):
+
+- Do you know when the 1st computer was made? How was it different from what they look like now?
+- When was the last time you were invited to a job interview? How did it go?
+- Do you know any successful tech companies that were started in a garage? Who were they founded by?
 
 the first computer was made in 1945. It was a large, modular computer, composed of individual panels to perform different functions.
 Last time I was invited to a job inerview in last year. It gone well, nothing unusual heppened.
