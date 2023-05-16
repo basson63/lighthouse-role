@@ -9,8 +9,8 @@ Steps to reproduce:
 •go to footer
 •click the sign up button
 
-# Задание
-## Сделайте упражнение ниже (нужно переделать предложения в пассивный залог):
+## Задание
+# Сделайте упражнение ниже (нужно переделать предложения в пассивный залог):
 
 1) I hope I will invited by HR to the technical interview.
 2) The first commercial computer has been released by Apple in 1983
@@ -22,3 +22,11 @@ Steps to reproduce:
 8) I was fired because my performance was poor
 9) The contract will be signed next week
 10) The project was released.
+
+
+## Задание
+# Напишите свой bug report на примере реального бага, с которым работали или выберите один из багов из списка ниже.
+
+the first computer was made in 1945. It was a large, modular computer, composed of individual panels to perform different functions.
+Last time I was invited to a job inerview in last year. It gone well, nothing unusual heppened.
+Apple was started in a garage. Steve Jobs was founded it.
