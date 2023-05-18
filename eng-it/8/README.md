@@ -1,5 +1,5 @@
-## Задание 8.1 
-# Практическое задание к блоку довольно предсказуемое: вам нужно будет составить собственное резюме на английском. Используйте фразы и советы из этого урока.
+# Задание 8.1 
+## Практическое задание к блоку довольно предсказуемое: вам нужно будет составить собственное резюме на английском. Используйте фразы и советы из этого урока.
 
 Information Technology Specialist
 
@@ -28,8 +28,8 @@ Exceptionally skilled in software related troubleshooting.
 
 -------------------------------------------------------------------
 
-## Задание 8.2
-# Напишите cover letter к своему резюме на позицию, на которую хотели бы/ планируете податься.
+# Задание 8.2
+## Напишите cover letter к своему резюме на позицию, на которую хотели бы/ планируете податься.
 
 It is with interest and enthusiasm that I respond to your advertisement for a Data Entry Clerk. I am confident that my experience and skills are an excellent match for this position. My credentials include:
 
