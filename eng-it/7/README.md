@@ -5,7 +5,7 @@
 
 <table>
   <colgroup>
-<tr>
+
 
 <col				                     <td>Backend developer</td>						 <td>Business Analyst</td>			             <td>PM</td>						<td>DEVOPS Engineer</td>						<td>You</td>
 
@@ -21,7 +21,7 @@
 							
 <td>Right now …</td>			<td>Work with data scientists and analysts to improve software</td>	<td>Analyze and clarify requirements</td>	<td>Investigate and resolve technical issues</td>		<td>Investigate and resolve technical issues</td>		<td>Writing new reports, processing</td>
 </colgroup>
- </tr>
+
 </table>
 
 
