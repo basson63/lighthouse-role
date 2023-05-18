@@ -4,8 +4,7 @@
 
 
 <table>
-
-<col>				                     <td>Backend developer</td>						 <td>Business Analyst</td>			             <td>PM</td>						<td>DEVOPS Engineer</td>						<td>You</td></col>
+<col>	<td> --- </td>			                     <td>Backend developer</td>						 <td>Business Analyst</td>			             <td>PM</td>						<td>DEVOPS Engineer</td>						<td>You</td></col>
 
 <col><td>Handle</td>				<td>Troubleshoot, debug and upgrade software</td>			<td>developers and IT staff</td>		<td>requirements with a customer or a BA</td>			<td>systems software</td>					<td>updates and fixes</td></col>
 			
