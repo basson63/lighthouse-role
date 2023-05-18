@@ -2,19 +2,19 @@
 ## Заполните табличку фразами с обязанностями для разных профессий, используя фразы для питча из видео.
 ## Обратите внимание на примеры, которые были приведены в видео, чтобы правильно согласовывались формы (I handle to do — нет, I handle troubleshooting — yes:
 
-				Backend developer						Business Analyst			PM							DEVOPS Engineer						You
+				                     <td>Backend developer</td>						 <td>Business Analyst</td>			             <td>PM</td>						<td>DEVOPS Engineer</td>						<td>You</td>
 
-Handle				Troubleshoot, debug and upgrade software			developers and IT staff			requirements with a customer or a BA			systems software					updates and fixes
+<col <td>Handle</td>				<td>Troubleshoot, debug and upgrade software</td>			<td>developers and IT staff</td>		<td>requirements with a customer or a BA</td>			<td>systems software</td>					<td>updates and fixes</td>
 			
-In charge of / responsible for	Write technical documentation					Plan the testing process		Writing new reports, processing				Implement systems software				Implement systems software
+<col <td>In charge of / responsible for</td>	<td>Write technical documentation</td>					<td>Plan the testing process</td>		<td>Writing new reports, processing</td>			<td>Implement systems software</td>				<td>Implement systems software</td>
 				
-My / their job is to		Write effective APIs						Discuss fixes with developers		Use and adapt existing web applications for apps	Deploy updates and fixes				Deploy updates and fixes
+<col <td>My / their job is to</td>		<td>Write effective APIs</td>						<td>Discuss fixes with developers</td>		<td>Use and adapt existing web applications for apps</td>	<td>Deploy updates and fixes</td>				<td>Deploy updates and fixes</td>
 					
-Oversee (control)		Test software to ensure responsiveness and efficiency		Optimize the testing process		Implement systems software				Provide Level 2 technical support			Provide Level 2 technical support
+<col <td>Oversee (control)</td>		        <td>Test software to ensure responsiveness and efficiency</td>		<td>Optimize the testing process</td>		<td>Implement systems software</td>				<td>Provide Level 2 technical support</td>			<td>Provide Level 2 technical support</td>
 					
-Make sure that (guarantee)	Create security and data protection settings			Conduct functional testing		Recommending and implementing improvements		Perform root cause analysis for production errors	Implement systems software
+<col <td>Make sure that (guarantee)</td>	<td>Create security and data protection settings</td>			<td>Conduct functional testing</td>		<td>Recommending and implementing improvements</td>		<td>Perform root cause analysis for production errors</td>	<td>Implement systems software</td>
 							
-Right now …			Work with data scientists and analysts to improve software	Analyze and clarify requirements	Investigate and resolve technical issues		Investigate and resolve technical issues		Writing new reports, processing	
+<col <td>Right now …</td>			<td>Work with data scientists and analysts to improve software</td>	<td>Analyze and clarify requirements</td>	<td>Investigate and resolve technical issues</td>		<td>Investigate and resolve technical issues</td>		<td>Writing new reports, processing</td>
 
 
 
