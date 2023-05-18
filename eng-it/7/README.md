@@ -2,6 +2,11 @@
 ## Заполните табличку фразами с обязанностями для разных профессий, используя фразы для питча из видео.
 ## Обратите внимание на примеры, которые были приведены в видео, чтобы правильно согласовывались формы (I handle to do — нет, I handle troubleshooting — yes:
 
+
+<table>
+  <colgroup>
+<tr>
+
 				                     <td>Backend developer</td>						 <td>Business Analyst</td>			             <td>PM</td>						<td>DEVOPS Engineer</td>						<td>You</td>
 
 <col <td>Handle</td>				<td>Troubleshoot, debug and upgrade software</td>			<td>developers and IT staff</td>		<td>requirements with a customer or a BA</td>			<td>systems software</td>					<td>updates and fixes</td>
@@ -16,6 +21,8 @@
 							
 <col <td>Right now …</td>			<td>Work with data scientists and analysts to improve software</td>	<td>Analyze and clarify requirements</td>	<td>Investigate and resolve technical issues</td>		<td>Investigate and resolve technical issues</td>		<td>Writing new reports, processing</td>
 
+ </tr>
+</table>
 
 
 
