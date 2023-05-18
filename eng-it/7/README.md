@@ -3,8 +3,6 @@
 ## Обратите внимание на примеры, которые были приведены в видео, чтобы правильно согласовывались формы (I handle to do — нет, I handle troubleshooting — yes:
 
 
-<table>
-  <colgroup>
 
 
 <col				                     <td>Backend developer</td>						 <td>Business Analyst</td>			             <td>PM</td>						<td>DEVOPS Engineer</td>						<td>You</td>
@@ -20,9 +18,7 @@
 <td>Make sure that (guarantee)</td>	<td>Create security and data protection settings</td>			<td>Conduct functional testing</td>		<td>Recommending and implementing improvements</td>		<td>Perform root cause analysis for production errors</td>	<td>Implement systems software</td>
 							
 <td>Right now …</td>			<td>Work with data scientists and analysts to improve software</td>	<td>Analyze and clarify requirements</td>	<td>Investigate and resolve technical issues</td>		<td>Investigate and resolve technical issues</td>		<td>Writing new reports, processing</td>
-</colgroup>
 
-</table>
 
 
 
