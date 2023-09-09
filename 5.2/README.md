@@ -184,4 +184,6 @@ Last login: Sat Sep 9 17:42:14 2023 from 10.0.2.2
 vagrant@server1:~$ docker ps
 <col>   <td> --- </td>
 <col><td>HCONTAINER ID</td>    <td>IMAGE</td>     <td>COMMAND</td>   <td>CREATED</td>   <td>STATUS</td>    <td>PORTS</td>     <td>NAMES</td>
+</table>
+
 vagrant@server1:~$
