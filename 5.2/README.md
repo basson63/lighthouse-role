@@ -182,5 +182,7 @@ This system is built by the Bento project by Chef Software
 More information can be found at https://github.com/chef/bento
 Last login: Sat Sep 9 17:42:14 2023 from 10.0.2.2
 vagrant@server1:~$ docker ps
-CONTAINER ID   IMAGE     COMMAND   CREATED   STATUS    PORTS     NAMES
+<table>
+<col>   <td> --- </td>
+<col><td>HCONTAINER ID</td>    <td>IMAGE</td>     <td>COMMAND</td>   <td>CREATED</td>   <td>STATUS</td>    <td>PORTS</td>     <td>NAMES</td>
 vagrant@server1:~$
