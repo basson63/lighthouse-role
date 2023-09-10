@@ -32,11 +32,10 @@ Build 'yandex' finished after 5 minutes 8 seconds.
 ```
 
 Скриншот страницы, как на слайде из презентации:
-<p align="center">
 
-![Скриншот](https://github.com/basson63/devops-netology-29/tree/main/5.4/img/image1_vrt.png)
 
-</p>
+![Скриншот](https://github.com/basson63/devops-netology-29/tree/main/5.4/img/image1_vrt.png?raw=true)
+
 
 ## Задача 2
 
