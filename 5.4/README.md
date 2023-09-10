@@ -34,7 +34,7 @@ Build 'yandex' finished after 5 minutes 8 seconds.
 Скриншот страницы, как на слайде из презентации:
 <p align="center">
 
-![Скриншот страницы](/img/Image1_vrt.png)
+![Скриншот страницы](/img/Image1_vrt.jpg)
 
 </p>
 
