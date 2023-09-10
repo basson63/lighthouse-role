@@ -63,7 +63,7 @@ internal_ip_address_node01_yandex_cloud = "192.168.101.32"
 ```
 Скриншот страницы свойств созданной ВМ:
 <p align="center">
-  <img width="1200" height="850" src="./img/Image2_vrt.png">
+  <img width="1200" height="850" src="./img/image2_vrt.png">
 </p>
 
 ## Задача 3
@@ -93,7 +93,7 @@ node01.netology.cloud      : ok=12   changed=10   unreachable=0    failed=0    s
 ```
 Скриншот работающего веб-интерфейса Grafana с текущими метриками:
 <p align="center">
-  <img width="1200" height="850" src="./img/Image3_vrt.png">
+  <img width="1200" height="850" src="./img/image3_vrt.png">
 </p>
 
 ## Задача 4 (*)
@@ -153,5 +153,5 @@ nodeexporter   /bin/node_exporter --path. ...   Up
 
 Скриншот страницы созданных ВМ:
 <p align="center">
-  <img width="1200" height="365" src="./img/Image4_vrt.png">
+  <img width="1200" height="365" src="./img/image4_vrt.png">
 </p>
