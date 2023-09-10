@@ -33,9 +33,9 @@ Build 'yandex' finished after 5 minutes 8 seconds.
 
 Скриншот страницы, как на слайде из презентации:
 
-
-![Скриншот](https://github.com/basson63/devops-netology-29/tree/main/5.4/img/image1_vrt.png?raw=true)
-
+<p align="center">
+  <img width="1200" height="850" src="./img/image1_vrt.png">
+</p>
 
 ## Задача 2
 
@@ -154,4 +154,9 @@ nodeexporter   /bin/node_exporter --path. ...   Up
 Скриншот страницы созданных ВМ:
 <p align="center">
   <img width="1200" height="365" src="./img/image4_vrt.png">
+</p>
+
+Скриншот из Grafana, на котором отображаются метрики добавленного сервера:
+<p align="center">
+  <img width="1200" height="530" src="./img/image5_vrt.png">
 </p>
