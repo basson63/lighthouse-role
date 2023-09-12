@@ -26,9 +26,9 @@
 <details>
 <summary> Скриншоты </summary>
 
-![img1](Terraform/terr/img/image-1)
+![img](devops-netology-29/Terraform/terr/img/image-1)
 
-![img2](Terraform/terr/img/image-2)
+![img](Terraform/terr/img/image-2)
 </details>
 
 ### Задание 2
@@ -38,7 +38,7 @@
 3. Объявите нужные переменные в файле variables.tf, обязательно указывайте тип переменной. Заполните их default прежними значениями из main.tf.
 4. Проверьте terraform plan (изменений быть не должно).
 
-Решение:[variables.tf](Terraform/terr/variables.tf)
+Решение:[variables.tf](devops-netology-29/Terraform/terr/variables.tf)
 
 
 После изменения "хардкод значений" в terraform plan никаких изменений не появилось:
