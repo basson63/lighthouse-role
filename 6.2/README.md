@@ -26,9 +26,9 @@
 <details>
 <summary> Скриншоты </summary>
 
-![img](https://github.com/basson63/devops-netology-29/tree/main/Terraform/terr/img/image-1.png)
+![Скриншот](https://github.com/basson63/devops-netology-29/tree/main/Terraform/terr/img/image-1.png)
 
-![img](https://github.com/basson63/devops-netology-29/tree/main/Terraform/terr/img/image-2.png)
+![Скриншот](https://github.com/basson63/devops-netology-29/tree/main/Terraform/terr/img/image-2.png)
 </details>
 
 ### Задание 2
@@ -64,7 +64,7 @@
 
 Вывод команды ```terraform output```: 
 
-![img3](https://github.com/basson63/devops-netology-29/tree/main/Terraform/terr/img/image-4.png)
+![Скриншот](https://github.com/basson63/devops-netology-29/tree/main/Terraform/terr/img/image-4.png)
 
 
 ### Задание 5
@@ -77,7 +77,7 @@
 
 Изменений в terraform plan не появилось:
 
-![image](Terraform/terr/img/image-5)
+![Скриншот](Terraform/terr/img/image-5)
 
 
 ### Задание 6
@@ -91,5 +91,5 @@
 
 Изменений в terraform plan не появилось:
 
-![image]![img2](https://github.com/basson63/devops-netology-29/tree/main/Terraform/terr/img/image-5.png)
+![Скриншот](https://github.com/basson63/devops-netology-29/tree/main/Terraform/terr/img/image-5.png)
 
