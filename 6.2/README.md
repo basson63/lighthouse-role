@@ -26,9 +26,9 @@
 <details>
 <summary> Скриншоты </summary>
 
-![img](devops-netology-29/Terraform/terr/img/image-1)
+![img](devops-netology-29/Terraform/terr/img/image-1.png)
 
-![img](Terraform/terr/img/image-2)
+![img](Terraform/terr/img/image-2.png)
 </details>
 
 ### Задание 2
