@@ -26,7 +26,7 @@
 <details>
 <summary> Скриншоты </summary>
 
-![img](devops-netology-29/Terraform/terr/img/image-1.png)
+![img](https://github.com/basson63/devops-netology-29/tree/main/Terraform/terr/img/image-1.png)
 
 ![img](Terraform/terr/img/image-2.png)
 </details>
