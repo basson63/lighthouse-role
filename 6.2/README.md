@@ -77,7 +77,7 @@
 
 Изменений в terraform plan не появилось:
 
-![Скриншот](terr/img/image-5)
+![Скриншот](terr/img/image-5.png)
 
 
 ### Задание 6
