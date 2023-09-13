@@ -26,9 +26,9 @@
 <details>
 <summary> Скриншоты </summary>
 
-![Скриншот](https://github.com/basson63/devops-netology-29/tree/main/Terraform/terr/img/image-1.png)
+![Скриншот](terr/img/image-1.png)
 
-![Скриншот](https://github.com/basson63/devops-netology-29/tree/main/Terraform/terr/img/image-2.png)
+![Скриншот](terr/img/image-2.png)
 </details>
 
 ### Задание 2
@@ -42,7 +42,7 @@
 
 
 После изменения "хардкод значений" в terraform plan никаких изменений не появилось:
-![image](https://github.com/basson63/devops-netology-29/tree/main/Terraform/terr/img/image-3.png)
+![image](terr/img/image-3.png)
 
 
 
@@ -53,7 +53,7 @@
 2. Скопируйте блок ресурса и создайте с его помощью вторую ВМ(в файле main.tf): "netology-develop-platform-db" , cores = 2, memory = 2, core_fraction = 20. Объявите ее переменные с префиксом vm_db_ в том же файле('vms_platform.tf').
 3. Примените изменения.
 
-Решение файлы: [vms_platform.tf](https://github.com/basson63/devops-netology-29/tree/main/Terraform/terr/vms_platform.tf) и [main.tf](https://github.com/basson63/devops-netology-29/tree/main/Terraform/terr/main.tf)
+Решение файлы: [vms_platform.tf](terr/vms_platform.tf) и [main.tf](terr/main.tf)
 
 ### Задание 4
 
@@ -64,7 +64,7 @@
 
 Вывод команды ```terraform output```: 
 
-![Скриншот](https://github.com/basson63/devops-netology-29/tree/main/Terraform/terr/img/image-4.png)
+![Скриншот](terr/img/image-4.png)
 
 
 ### Задание 5
@@ -73,11 +73,11 @@
 2. Замените переменные с именами ВМ из файла variables.tf на созданные вами local переменные.
 3. Примените изменения.
 
-Решение: [variables.tf](https://github.com/basson63/devops-netology-29/tree/main/Terraform/terr/variables.tf),[vms_platform.tf](https://github.com/basson63/devops-netology-29/tree/main/Terraform/terr/vms_platform.tf),[main.tf](https://github.com/basson63/devops-netology-29/tree/main/Terraform/terr/main.tf)
+Решение: [variables.tf](terr/variables.tf),[vms_platform.tf](terr/vms_platform.tf),[main.tf](terr/main.tf)
 
 Изменений в terraform plan не появилось:
 
-![Скриншот](Terraform/terr/img/image-5)
+![Скриншот](terr/img/image-5)
 
 
 ### Задание 6
@@ -91,5 +91,5 @@
 
 Изменений в terraform plan не появилось:
 
-![Скриншот](https://github.com/basson63/devops-netology-29/tree/main/Terraform/terr/img/image-5.png)
+![Скриншот](terr/img/image-6.png)
 
