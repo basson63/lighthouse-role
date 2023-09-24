@@ -30,9 +30,48 @@ $2a$10$yMQNEFU0sfUR/l5X0CVKx.QguybOhn2HjPa8ZLWf39.LLxEw8UVP.
 - **salt** - 16-байтовая (128-битная) соль, base64, закодированная в 22 символа
 - **hash-value** - 24-байтовый (192-битный) хэш, кодированный base64 до 31 символа
 
->Задание 1.3 Нужно сделать это: секретное содержимое созданного ресурса random_password, пришлите в качестве ответа конкретный ключ и его значение можно скрин приложить из state для наглядности и выделить конкретное место
+>Выполните код проекта. Найдите в state-файле секретное содержимое созданного ресурса random_password, пришлите в качестве ответа конкретный ключ и его значение.
 
-![Screenshot terraform.tfstate](img/image.png)
+"result": "c18AUA5V5vwly0Tx"
+{
+  "version": 4,
+  "terraform_version": "1.4.0",
+  "serial": 1,
+  "lineage": "60aba224-e859-edb1-147b-f67214c923ec",
+  "outputs": {},
+  "resources": [
+    {
+      "mode": "managed",
+      "type": "random_password",
+      "name": "random_string",
+      "provider": "provider[\"registry.terraform.io/hashicorp/random\"]",
+      "instances": [
+        {
+          "schema_version": 3,
+          "attributes": {
+            "bcrypt_hash": "$2a$10$1G9MDOrm4fuyxrtcwRLR8.iOwIM3p4WfbrdPTUE.u5GewkrsFSmjW",
+            "id": "none",
+            "keepers": null,
+            "length": 16,
+            "lower": true,
+            "min_lower": 1,
+            "min_numeric": 1,
+            "min_special": 0,
+            "min_upper": 1,
+            "number": true,
+            "numeric": true,
+            "override_special": null,
+            "result": "c18AUA5V5vwly0Tx",
+            "special": false,
+            "upper": true
+          },
+          "sensitive_attributes": []
+        }
+      ]
+    }
+  ],
+  "check_results": null
+}
 
 >Раскомментируйте блок кода, примерно расположенный на строчках 29-42 файла **main.tf**.  
 >Выполните команду ```terraform validate```.  
@@ -139,16 +178,14 @@ CONTAINER ID   IMAGE          COMMAND                  CREATED          STATUS  
 }
 ```
 
->Объясните, почему при этом не был удален docker образ **nginx:latest** ?
+>Объясните, почему при этом не был удалён docker-образ nginx:latest. Ответ обязательно подкрепите строчкой из документации terraform провайдера docker. (ищите в классификаторе resource docker_image )
 
-Команда ```terraform destroy``` удаляет только те ресурсы, которыми управляет сам Terraform. Ресурсы, которые он создал  и передал в управление другому сервису не удаляются командой ```terraform destroy```.
-
->Ответ подкрепите выдержкой из документации провайдера.
-
-![Screenshot из документации](img/image-2.png)
-
->Задание 1.8. А если я скажу что в конкретном случае terraform влиял на docker и может удалить image, но ему запретили это делать. Вопрос. Как это реализовано?
-
-```hcl
-resource "docker_image" "nginx" {
+```bash
+resource "docker_image" "nginx-last" {
   name         = "nginx:latest"
+  keep_locally = true
+}
+```
+```text
+Команда keep_locally = true сохранила образ в локальные образы Docker.
+```
