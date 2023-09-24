@@ -69,32 +69,43 @@
 
 ### Задание 5
 
-В файле locals.tf опишите в одном local-блоке имя каждой ВМ, используйте интерполяцию по примеру из лекции.
+1. В файле locals.tf опишите в **одном** local-блоке имя каждой ВМ, используйте интерполяцию по примеру из лекции.
+
 Файл locals.tf:
 
+```bash
 locals {
   env = "develop"
   project = "platform"
   role1 = "web"
   role2 = "db"
 }
+```
 Файл main.tf:
-
+```bash
 ...
 resource "yandex_compute_instance" "platform" {
   name        = "netology–${ local.env }–${ local.project }–${ local.role1 }"
   ...
+```
 Файл vms_platform.tf:
-
+```bash
 resource "yandex_compute_instance" "vm_db_platform" {
   name        = "netology–${ local.env }–${ local.project }–${ local.role2 }"
-Замените переменные с именами ВМ из файла variables.tf на созданные вами local переменные.
+```
+
+2. Замените переменные с именами ВМ из файла variables.tf на созданные вами local переменные.
+
+```bash
 resource "yandex_compute_instance" "platform" {
   name        = local.vm_web_resource_name
+```
+```bash
 resource "yandex_compute_instance" "vm_db_platform" {
   name        = local.vm_db_resource_name
-
+```
 3. Примените изменения
+
 ![Скриншот](terr/img/image-5.png)
 
 
