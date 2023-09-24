@@ -69,14 +69,32 @@
 
 ### Задание 5
 
-1. В файле locals.tf опишите в одном local-блоке имя каждой ВМ, используйте интерполяцию ${..} с несколькими переменными по примеру из лекции.
-2. Замените переменные с именами ВМ из файла variables.tf на созданные вами local переменные.
-3. Примените изменения.
+В файле locals.tf опишите в одном local-блоке имя каждой ВМ, используйте интерполяцию по примеру из лекции.
+Файл locals.tf:
 
-Решение: [variables.tf](terr/variables.tf),[vms_platform.tf](terr/vms_platform.tf),[main.tf](terr/main.tf)
+locals {
+  env = "develop"
+  project = "platform"
+  role1 = "web"
+  role2 = "db"
+}
+Файл main.tf:
 
-Изменений в terraform plan не появилось:
+...
+resource "yandex_compute_instance" "platform" {
+  name        = "netology–${ local.env }–${ local.project }–${ local.role1 }"
+  ...
+Файл vms_platform.tf:
 
+resource "yandex_compute_instance" "vm_db_platform" {
+  name        = "netology–${ local.env }–${ local.project }–${ local.role2 }"
+Замените переменные с именами ВМ из файла variables.tf на созданные вами local переменные.
+resource "yandex_compute_instance" "platform" {
+  name        = local.vm_web_resource_name
+resource "yandex_compute_instance" "vm_db_platform" {
+  name        = local.vm_db_resource_name
+
+3. Примените изменения
 ![Скриншот](terr/img/image-5.png)
 
 
