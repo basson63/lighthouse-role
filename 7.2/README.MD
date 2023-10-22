@@ -1,5 +1,5 @@
 # Домашнее задание к занятию 2 «Работа с Playbook»
-
+ 
 ## Подготовка к выполнению
 
 1. * Необязательно. Изучите, что такое [ClickHouse](https://www.youtube.com/watch?v=fjTNS2zkeBs) и [Vector](https://www.youtube.com/watch?v=CgEhyffisLY).
