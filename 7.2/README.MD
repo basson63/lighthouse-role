@@ -56,7 +56,10 @@ basson63@virtual-machine:~/devops-netology-29/7.2/playbook_vector$  cat template
 #!/usr/bin/env bash
 export VECTOR_DIR={{ vector_dir }}
 export PATH=$PATH:$VECTOR_DIR/bin
+vector --config /etc/vector/config/vector.toml
+
 ```
+
 ```
 basson63@virtual-machine:~/devops-netology-29/7.2/playbook_vector$  cat group_vars/vector/vars.yml 
 ---
