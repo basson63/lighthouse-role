@@ -1,5 +1,5 @@
 // Copyright (c) HashiCorp, Inc.
-// SPDX-License-Identifier: MPL-2.0
+// SPDX-License-Identifier: BUSL-1.1
 
 package terraform
 
@@ -73,12 +73,19 @@ type PlanGraphBuilder struct {
 	// Plan Operation this graph will be used for.
 	Operation walkOperation
 
+	// ExternalReferences allows the external caller to pass in references to
+	// nodes that should not be pruned even if they are not referenced within
+	// the actual graph.
+	ExternalReferences []*addrs.Reference
+
 	// ImportTargets are the list of resources to import.
 	ImportTargets []*ImportTarget
 
-	// GenerateConfig tells Terraform to generate config for any import targets
-	// that do not already have configuration.
-	GenerateConfig bool
+	// GenerateConfig tells Terraform where to write and generated config for
+	// any import targets that do not already have configuration.
+	//
+	// If empty, then config will not be generated.
+	GenerateConfigPath string
 }
 
 // See GraphBuilder
@@ -117,17 +124,17 @@ func (b *PlanGraphBuilder) Steps() []GraphTransformer {
 			importTargets: b.ImportTargets,
 
 			// We only want to generate config during a plan operation.
-			generateConfigForImportTargets: b.GenerateConfig,
+			generateConfigPathForImportTargets: b.GenerateConfigPath,
 		},
 
 		// Add dynamic values
-		&RootVariableTransformer{Config: b.Config, RawValues: b.RootVariableValues},
-		&ModuleVariableTransformer{Config: b.Config},
+		&RootVariableTransformer{Config: b.Config, RawValues: b.RootVariableValues, Planning: true},
+		&ModuleVariableTransformer{Config: b.Config, Planning: true},
 		&LocalTransformer{Config: b.Config},
 		&OutputTransformer{
 			Config:      b.Config,
 			RefreshOnly: b.skipPlanChanges || b.preDestroyRefresh,
-			PlanDestroy: b.Operation == walkPlanDestroy,
+			Destroying:  b.Operation == walkPlanDestroy,
 
 			// NOTE: We currently treat anything built with the plan graph
 			// builder as "planning" for our purposes here, because we share
@@ -190,6 +197,11 @@ func (b *PlanGraphBuilder) Steps() []GraphTransformer {
 		// come after all other transformers that create nodes representing
 		// objects that can belong to modules.
 		&ModuleExpansionTransformer{Concrete: b.ConcreteModule, Config: b.Config},
+
+		// Plug in any external references.
+		&ExternalReferenceTransformer{
+			ExternalReferences: b.ExternalReferences,
+		},
 
 		&ReferenceTransformer{},
 

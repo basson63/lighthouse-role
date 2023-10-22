@@ -1,5 +1,5 @@
 // Copyright (c) HashiCorp, Inc.
-// SPDX-License-Identifier: MPL-2.0
+// SPDX-License-Identifier: BUSL-1.1
 
 package terraform
 
@@ -9,6 +9,7 @@ import (
 	"sort"
 
 	"github.com/hashicorp/hcl/v2"
+
 	"github.com/hashicorp/terraform/internal/addrs"
 	"github.com/hashicorp/terraform/internal/configs/configschema"
 	"github.com/hashicorp/terraform/internal/dag"
@@ -555,6 +556,6 @@ func ReferencesFromConfig(body hcl.Body, schema *configschema.Block) []*addrs.Re
 	if body == nil {
 		return nil
 	}
-	refs, _ := lang.ReferencesInBlock(body, schema)
+	refs, _ := lang.ReferencesInBlock(addrs.ParseRef, body, schema)
 	return refs
 }

@@ -1,13 +1,13 @@
 // Copyright (c) HashiCorp, Inc.
-// SPDX-License-Identifier: MPL-2.0
+// SPDX-License-Identifier: BUSL-1.1
 
 package s3
 
 import (
 	"bytes"
+	"context"
 	"crypto/md5"
 	"fmt"
-	"strings"
 	"testing"
 	"time"
 
@@ -22,8 +22,11 @@ func TestRemoteClient_impl(t *testing.T) {
 	var _ remote.ClientLocker = new(RemoteClient)
 }
 
-func TestRemoteClient(t *testing.T) {
+func TestRemoteClientBasic(t *testing.T) {
 	testACC(t)
+
+	ctx := context.TODO()
+
 	bucketName := fmt.Sprintf("terraform-remote-s3-test-%x", time.Now().Unix())
 	keyName := "testState"
 
@@ -33,8 +36,8 @@ func TestRemoteClient(t *testing.T) {
 		"encrypt": true,
 	})).(*Backend)
 
-	createS3Bucket(t, b.s3Client, bucketName)
-	defer deleteS3Bucket(t, b.s3Client, bucketName)
+	createS3Bucket(ctx, t, b.s3Client, bucketName, b.awsConfig.Region)
+	defer deleteS3Bucket(ctx, t, b.s3Client, bucketName)
 
 	state, err := b.StateMgr(backend.DefaultStateName)
 	if err != nil {
@@ -46,6 +49,9 @@ func TestRemoteClient(t *testing.T) {
 
 func TestRemoteClientLocks(t *testing.T) {
 	testACC(t)
+
+	ctx := context.TODO()
+
 	bucketName := fmt.Sprintf("terraform-remote-s3-test-%x", time.Now().Unix())
 	keyName := "testState"
 
@@ -63,10 +69,10 @@ func TestRemoteClientLocks(t *testing.T) {
 		"dynamodb_table": bucketName,
 	})).(*Backend)
 
-	createS3Bucket(t, b1.s3Client, bucketName)
-	defer deleteS3Bucket(t, b1.s3Client, bucketName)
-	createDynamoDBTable(t, b1.dynClient, bucketName)
-	defer deleteDynamoDBTable(t, b1.dynClient, bucketName)
+	createS3Bucket(ctx, t, b1.s3Client, bucketName, b1.awsConfig.Region)
+	defer deleteS3Bucket(ctx, t, b1.s3Client, bucketName)
+	createDynamoDBTable(ctx, t, b1.dynClient, bucketName)
+	defer deleteDynamoDBTable(ctx, t, b1.dynClient, bucketName)
 
 	s1, err := b1.StateMgr(backend.DefaultStateName)
 	if err != nil {
@@ -84,6 +90,9 @@ func TestRemoteClientLocks(t *testing.T) {
 // verify that we can unlock a state with an existing lock
 func TestForceUnlock(t *testing.T) {
 	testACC(t)
+
+	ctx := context.TODO()
+
 	bucketName := fmt.Sprintf("terraform-remote-s3-test-force-%x", time.Now().Unix())
 	keyName := "testState"
 
@@ -101,10 +110,10 @@ func TestForceUnlock(t *testing.T) {
 		"dynamodb_table": bucketName,
 	})).(*Backend)
 
-	createS3Bucket(t, b1.s3Client, bucketName)
-	defer deleteS3Bucket(t, b1.s3Client, bucketName)
-	createDynamoDBTable(t, b1.dynClient, bucketName)
-	defer deleteDynamoDBTable(t, b1.dynClient, bucketName)
+	createS3Bucket(ctx, t, b1.s3Client, bucketName, b1.awsConfig.Region)
+	defer deleteS3Bucket(ctx, t, b1.s3Client, bucketName)
+	createDynamoDBTable(ctx, t, b1.dynClient, bucketName)
+	defer deleteDynamoDBTable(ctx, t, b1.dynClient, bucketName)
 
 	// first test with default
 	s1, err := b1.StateMgr(backend.DefaultStateName)
@@ -161,6 +170,8 @@ func TestForceUnlock(t *testing.T) {
 func TestRemoteClient_clientMD5(t *testing.T) {
 	testACC(t)
 
+	ctx := context.TODO()
+
 	bucketName := fmt.Sprintf("terraform-remote-s3-test-%x", time.Now().Unix())
 	keyName := "testState"
 
@@ -170,10 +181,10 @@ func TestRemoteClient_clientMD5(t *testing.T) {
 		"dynamodb_table": bucketName,
 	})).(*Backend)
 
-	createS3Bucket(t, b.s3Client, bucketName)
-	defer deleteS3Bucket(t, b.s3Client, bucketName)
-	createDynamoDBTable(t, b.dynClient, bucketName)
-	defer deleteDynamoDBTable(t, b.dynClient, bucketName)
+	createS3Bucket(ctx, t, b.s3Client, bucketName, b.awsConfig.Region)
+	defer deleteS3Bucket(ctx, t, b.s3Client, bucketName)
+	createDynamoDBTable(ctx, t, b.dynClient, bucketName)
+	defer deleteDynamoDBTable(ctx, t, b.dynClient, bucketName)
 
 	s, err := b.StateMgr(backend.DefaultStateName)
 	if err != nil {
@@ -183,11 +194,11 @@ func TestRemoteClient_clientMD5(t *testing.T) {
 
 	sum := md5.Sum([]byte("test"))
 
-	if err := client.putMD5(sum[:]); err != nil {
+	if err := client.putMD5(ctx, sum[:]); err != nil {
 		t.Fatal(err)
 	}
 
-	getSum, err := client.getMD5()
+	getSum, err := client.getMD5(ctx)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -196,11 +207,11 @@ func TestRemoteClient_clientMD5(t *testing.T) {
 		t.Fatalf("getMD5 returned the wrong checksum: expected %x, got %x", sum[:], getSum)
 	}
 
-	if err := client.deleteMD5(); err != nil {
+	if err := client.deleteMD5(ctx); err != nil {
 		t.Fatal(err)
 	}
 
-	if getSum, err := client.getMD5(); err == nil {
+	if getSum, err := client.getMD5(ctx); err == nil {
 		t.Fatalf("expected getMD5 error, got none. checksum: %x", getSum)
 	}
 }
@@ -208,6 +219,8 @@ func TestRemoteClient_clientMD5(t *testing.T) {
 // verify that a client won't return a state with an incorrect checksum.
 func TestRemoteClient_stateChecksum(t *testing.T) {
 	testACC(t)
+
+	ctx := context.TODO()
 
 	bucketName := fmt.Sprintf("terraform-remote-s3-test-%x", time.Now().Unix())
 	keyName := "testState"
@@ -218,10 +231,10 @@ func TestRemoteClient_stateChecksum(t *testing.T) {
 		"dynamodb_table": bucketName,
 	})).(*Backend)
 
-	createS3Bucket(t, b1.s3Client, bucketName)
-	defer deleteS3Bucket(t, b1.s3Client, bucketName)
-	createDynamoDBTable(t, b1.dynClient, bucketName)
-	defer deleteDynamoDBTable(t, b1.dynClient, bucketName)
+	createS3Bucket(ctx, t, b1.s3Client, bucketName, b1.awsConfig.Region)
+	defer deleteS3Bucket(ctx, t, b1.s3Client, bucketName)
+	createDynamoDBTable(ctx, t, b1.dynClient, bucketName)
+	defer deleteDynamoDBTable(ctx, t, b1.dynClient, bucketName)
 
 	s1, err := b1.StateMgr(backend.DefaultStateName)
 	if err != nil {
@@ -286,8 +299,10 @@ func TestRemoteClient_stateChecksum(t *testing.T) {
 
 	// fetching an empty state through client1 should now error out due to a
 	// mismatched checksum.
-	if _, err := client1.Get(); !strings.HasPrefix(err.Error(), errBadChecksumFmt[:80]) {
+	if _, err := client1.Get(); !IsA[badChecksumError](err) {
 		t.Fatalf("expected state checksum error: got %s", err)
+	} else if bse, ok := As[badChecksumError](err); ok && len(bse.digest) != 0 {
+		t.Fatalf("expected empty checksum, got %x", bse.digest)
 	}
 
 	// put the old state in place of the new, without updating the checksum
@@ -297,7 +312,7 @@ func TestRemoteClient_stateChecksum(t *testing.T) {
 
 	// fetching the wrong state through client1 should now error out due to a
 	// mismatched checksum.
-	if _, err := client1.Get(); !strings.HasPrefix(err.Error(), errBadChecksumFmt[:80]) {
+	if _, err := client1.Get(); !IsA[badChecksumError](err) {
 		t.Fatalf("expected state checksum error: got %s", err)
 	}
 

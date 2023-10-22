@@ -1,5 +1,5 @@
 // Copyright (c) HashiCorp, Inc.
-// SPDX-License-Identifier: MPL-2.0
+// SPDX-License-Identifier: BUSL-1.1
 
 package cloud
 
@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"path/filepath"
 	"strings"
 	"syscall"
 	"testing"
@@ -15,8 +16,11 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	tfe "github.com/hashicorp/go-tfe"
+	"github.com/mitchellh/cli"
+
 	"github.com/hashicorp/terraform/internal/addrs"
 	"github.com/hashicorp/terraform/internal/backend"
+	"github.com/hashicorp/terraform/internal/cloud/cloudplan"
 	"github.com/hashicorp/terraform/internal/command/arguments"
 	"github.com/hashicorp/terraform/internal/command/clistate"
 	"github.com/hashicorp/terraform/internal/command/jsonformat"
@@ -28,7 +32,6 @@ import (
 	"github.com/hashicorp/terraform/internal/states/statemgr"
 	"github.com/hashicorp/terraform/internal/terminal"
 	"github.com/hashicorp/terraform/internal/terraform"
-	"github.com/mitchellh/cli"
 )
 
 func testOperationPlan(t *testing.T, configDir string) (*backend.Operation, func(), func(*testing.T) *terminal.TestOutput) {
@@ -40,7 +43,7 @@ func testOperationPlan(t *testing.T, configDir string) (*backend.Operation, func
 func testOperationPlanWithTimeout(t *testing.T, configDir string, timeout time.Duration) (*backend.Operation, func(), func(*testing.T) *terminal.TestOutput) {
 	t.Helper()
 
-	_, configLoader, configCleanup := initwd.MustLoadConfigForTests(t, configDir)
+	_, configLoader, configCleanup := initwd.MustLoadConfigForTests(t, configDir, "tests")
 
 	streams, done := terminal.StreamsForTesting(t)
 	view := views.NewView(streams)
@@ -335,7 +338,7 @@ func TestCloud_planWithPlan(t *testing.T) {
 	op, configCleanup, done := testOperationPlan(t, "./testdata/plan")
 	defer configCleanup()
 
-	op.PlanFile = &planfile.Reader{}
+	op.PlanFile = planfile.NewWrappedLocal(&planfile.Reader{})
 	op.Workspace = testBackendSingleWorkspaceName
 
 	run, err := b.Operation(context.Background(), op)
@@ -364,8 +367,11 @@ func TestCloud_planWithPath(t *testing.T) {
 
 	op, configCleanup, done := testOperationPlan(t, "./testdata/plan")
 	defer configCleanup()
+	defer done(t)
 
-	op.PlanOutPath = "./testdata/plan"
+	tmpDir := t.TempDir()
+	pfPath := tmpDir + "/plan.tfplan"
+	op.PlanOutPath = pfPath
 	op.Workspace = testBackendSingleWorkspaceName
 
 	run, err := b.Operation(context.Background(), op)
@@ -374,17 +380,43 @@ func TestCloud_planWithPath(t *testing.T) {
 	}
 
 	<-run.Done()
-	output := done(t)
-	if run.Result == backend.OperationSuccess {
-		t.Fatal("expected plan operation to fail")
+	if run.Result != backend.OperationSuccess {
+		t.Fatalf("operation failed: %s", b.CLI.(*cli.MockUi).ErrorWriter.String())
 	}
-	if !run.PlanEmpty {
-		t.Fatalf("expected plan to be empty")
+	if run.PlanEmpty {
+		t.Fatal("expected a non-empty plan")
 	}
 
-	errOutput := output.Stderr()
-	if !strings.Contains(errOutput, "generated plan is currently not supported") {
-		t.Fatalf("expected a generated plan error, got: %v", errOutput)
+	output := b.CLI.(*cli.MockUi).OutputWriter.String()
+	if !strings.Contains(output, "Running plan in Terraform Cloud") {
+		t.Fatalf("expected TFC header in output: %s", output)
+	}
+	if !strings.Contains(output, "1 to add, 0 to change, 0 to destroy") {
+		t.Fatalf("expected plan summary in output: %s", output)
+	}
+
+	plan, err := cloudplan.LoadSavedPlanBookmark(pfPath)
+	if err != nil {
+		t.Fatalf("error loading cloud plan file: %v", err)
+	}
+	if !strings.Contains(plan.RunID, "run-") || plan.Hostname != "app.terraform.io" {
+		t.Fatalf("unexpected contents in saved cloud plan: %v", plan)
+	}
+
+	// We should find a run inside the mock client that has a provisional, non-speculative
+	// configuration version
+	configVersionsAPI := b.client.ConfigurationVersions.(*MockConfigurationVersions)
+	if got, want := len(configVersionsAPI.configVersions), 1; got != want {
+		t.Fatalf("wrong number of configuration versions in the mock client %d; want %d", got, want)
+	}
+	for _, configVersion := range configVersionsAPI.configVersions {
+		if configVersion.Provisional != true {
+			t.Errorf("wrong Provisional setting in the created configuration version\ngot %v, expected %v", configVersion.Provisional, true)
+		}
+
+		if configVersion.Speculative != false {
+			t.Errorf("wrong Speculative setting in the created configuration version\ngot %v, expected %v", configVersion.Speculative, false)
+		}
 	}
 }
 
@@ -1255,6 +1287,132 @@ func TestCloud_planOtherError(t *testing.T) {
 	}
 }
 
+func TestCloud_planImportConfigGeneration(t *testing.T) {
+	b, bCleanup := testBackendWithName(t)
+	defer bCleanup()
+
+	stream, close := terminal.StreamsForTesting(t)
+
+	b.renderer = &jsonformat.Renderer{
+		Streams:  stream,
+		Colorize: mockColorize(),
+	}
+
+	op, configCleanup, done := testOperationPlan(t, "./testdata/plan-import-config-gen")
+	defer configCleanup()
+	defer done(t)
+
+	genPath := filepath.Join(op.ConfigDir, "generated.tf")
+	op.GenerateConfigOut = genPath
+	defer os.Remove(genPath)
+
+	op.Workspace = testBackendSingleWorkspaceName
+
+	mockSROWorkspace(t, b, op.Workspace)
+
+	run, err := b.Operation(context.Background(), op)
+	if err != nil {
+		t.Fatalf("error starting operation: %v", err)
+	}
+
+	<-run.Done()
+	if run.Result != backend.OperationSuccess {
+		t.Fatalf("operation failed: %s", b.CLI.(*cli.MockUi).ErrorWriter.String())
+	}
+	if run.PlanEmpty {
+		t.Fatal("expected a non-empty plan")
+	}
+	outp := close(t)
+	gotOut := outp.Stdout()
+
+	if !strings.Contains(gotOut, "1 to import, 0 to add, 0 to change, 0 to destroy") {
+		t.Fatalf("expected plan summary in output: %s", gotOut)
+	}
+
+	stateMgr, _ := b.StateMgr(testBackendSingleWorkspaceName)
+	// An error suggests that the state was not unlocked after the operation finished
+	if _, err := stateMgr.Lock(statemgr.NewLockInfo()); err != nil {
+		t.Fatalf("unexpected error locking state after successful plan: %s", err.Error())
+	}
+
+	testFileEquals(t, genPath, filepath.Join(op.ConfigDir, "generated.tf.expected"))
+}
+
+func TestCloud_planImportGenerateInvalidConfig(t *testing.T) {
+	b, bCleanup := testBackendWithName(t)
+	defer bCleanup()
+
+	stream, close := terminal.StreamsForTesting(t)
+
+	b.renderer = &jsonformat.Renderer{
+		Streams:  stream,
+		Colorize: mockColorize(),
+	}
+
+	op, configCleanup, done := testOperationPlan(t, "./testdata/plan-import-config-gen-validation-error")
+	defer configCleanup()
+	defer done(t)
+
+	genPath := filepath.Join(op.ConfigDir, "generated.tf")
+	op.GenerateConfigOut = genPath
+	defer os.Remove(genPath)
+
+	op.Workspace = testBackendSingleWorkspaceName
+
+	mockSROWorkspace(t, b, op.Workspace)
+
+	run, err := b.Operation(context.Background(), op)
+	if err != nil {
+		t.Fatalf("error starting operation: %v", err)
+	}
+
+	<-run.Done()
+	if run.Result != backend.OperationFailure {
+		t.Fatalf("expected operation to fail")
+	}
+	if run.Result.ExitStatus() != 1 {
+		t.Fatalf("expected exit code 1, got %d", run.Result.ExitStatus())
+	}
+
+	outp := close(t)
+	gotOut := outp.Stdout()
+
+	if !strings.Contains(gotOut, "Conflicting configuration arguments") {
+		t.Fatalf("Expected error in output: %s", gotOut)
+	}
+
+	testFileEquals(t, genPath, filepath.Join(op.ConfigDir, "generated.tf.expected"))
+}
+
+func TestCloud_planInvalidGenConfigOutPath(t *testing.T) {
+	b, bCleanup := testBackendWithName(t)
+	defer bCleanup()
+
+	op, configCleanup, done := testOperationPlan(t, "./testdata/plan-import-config-gen-exists")
+	defer configCleanup()
+
+	genPath := filepath.Join(op.ConfigDir, "generated.tf")
+	op.GenerateConfigOut = genPath
+
+	op.Workspace = testBackendSingleWorkspaceName
+
+	run, err := b.Operation(context.Background(), op)
+	if err != nil {
+		t.Fatalf("error starting operation: %v", err)
+	}
+
+	<-run.Done()
+	output := done(t)
+	if run.Result == backend.OperationSuccess {
+		t.Fatal("expected plan operation to fail")
+	}
+
+	errOutput := output.Stderr()
+	if !strings.Contains(errOutput, "generated file already exists") {
+		t.Fatalf("expected configuration files error, got: %v", errOutput)
+	}
+}
+
 func TestCloud_planShouldRenderSRO(t *testing.T) {
 	t.Run("when instance is TFC", func(t *testing.T) {
 		handlers := map[string]func(http.ResponseWriter, *http.Request){
@@ -1369,5 +1527,23 @@ func assertSRORendered(t *testing.T, b *Cloud, r *tfe.Run, shouldRender bool) {
 	}
 	if shouldRender != got {
 		t.Fatalf("expected SRO to be rendered: %t, got %t", shouldRender, got)
+	}
+}
+
+func testFileEquals(t *testing.T, got, want string) {
+	t.Helper()
+
+	actual, err := os.ReadFile(got)
+	if err != nil {
+		t.Fatalf("error reading %s", got)
+	}
+
+	expected, err := os.ReadFile(want)
+	if err != nil {
+		t.Fatalf("error reading %s", want)
+	}
+
+	if diff := cmp.Diff(string(actual), string(expected)); len(diff) > 0 {
+		t.Fatalf("got:\n%s\nwant:\n%s\ndiff:\n%s", actual, expected, diff)
 	}
 }

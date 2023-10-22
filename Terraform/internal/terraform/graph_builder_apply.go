@@ -1,5 +1,5 @@
 // Copyright (c) HashiCorp, Inc.
-// SPDX-License-Identifier: MPL-2.0
+// SPDX-License-Identifier: BUSL-1.1
 
 package terraform
 
@@ -52,6 +52,11 @@ type ApplyGraphBuilder struct {
 
 	// Plan Operation this graph will be used for.
 	Operation walkOperation
+
+	// ExternalReferences allows the external caller to pass in references to
+	// nodes that should not be pruned even if they are not referenced within
+	// the actual graph.
+	ExternalReferences []*addrs.Reference
 }
 
 // See GraphBuilder
@@ -99,8 +104,8 @@ func (b *ApplyGraphBuilder) Steps() []GraphTransformer {
 		&ModuleVariableTransformer{Config: b.Config},
 		&LocalTransformer{Config: b.Config},
 		&OutputTransformer{
-			Config:       b.Config,
-			ApplyDestroy: b.Operation == walkDestroy,
+			Config:     b.Config,
+			Destroying: b.Operation == walkDestroy,
 		},
 
 		// Creates all the resource instances represented in the diff, along
@@ -144,9 +149,18 @@ func (b *ApplyGraphBuilder) Steps() []GraphTransformer {
 		// objects that can belong to modules.
 		&ModuleExpansionTransformer{Config: b.Config},
 
+		// Plug in any external references.
+		&ExternalReferenceTransformer{
+			ExternalReferences: b.ExternalReferences,
+		},
+
 		// Connect references so ordering is correct
 		&ReferenceTransformer{},
 		&AttachDependenciesTransformer{},
+
+		// Nested data blocks should be loaded after every other resource has
+		// done its thing.
+		&checkStartTransformer{Config: b.Config, Operation: b.Operation},
 
 		// Detect when create_before_destroy must be forced on for a particular
 		// node due to dependency edges, to avoid graph cycles during apply.

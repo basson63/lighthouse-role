@@ -1,5 +1,5 @@
 // Copyright (c) HashiCorp, Inc.
-// SPDX-License-Identifier: MPL-2.0
+// SPDX-License-Identifier: BUSL-1.1
 
 package planfile
 
@@ -120,6 +120,33 @@ func TestTFPlanRoundTrip(t *testing.T) {
 						Before: mustNewDynamicValue(cty.ObjectVal(map[string]cty.Value{
 							"id": cty.StringVal("bar-baz-foo"),
 						}), objTy),
+					},
+				},
+				{
+					Addr: addrs.Resource{
+						Mode: addrs.ManagedResourceMode,
+						Type: "test_thing",
+						Name: "importing",
+					}.Instance(addrs.IntKey(1)).Absolute(addrs.RootModuleInstance),
+					PrevRunAddr: addrs.Resource{
+						Mode: addrs.ManagedResourceMode,
+						Type: "test_thing",
+						Name: "importing",
+					}.Instance(addrs.IntKey(1)).Absolute(addrs.RootModuleInstance),
+					ProviderAddr: addrs.AbsProviderConfig{
+						Provider: addrs.NewDefaultProvider("test"),
+						Module:   addrs.RootModule,
+					},
+					ChangeSrc: plans.ChangeSrc{
+						Action: plans.NoOp,
+						Before: mustNewDynamicValue(cty.ObjectVal(map[string]cty.Value{
+							"id": cty.StringVal("testing"),
+						}), objTy),
+						After: mustNewDynamicValue(cty.ObjectVal(map[string]cty.Value{
+							"id": cty.StringVal("testing"),
+						}), objTy),
+						Importing:       &plans.ImportingSrc{ID: "testing"},
+						GeneratedConfig: "resource \\\"test_thing\\\" \\\"importing\\\" {}",
 					},
 				},
 			},

@@ -1,5 +1,5 @@
 // Copyright (c) HashiCorp, Inc.
-// SPDX-License-Identifier: MPL-2.0
+// SPDX-License-Identifier: BUSL-1.1
 
 package planfile
 
@@ -120,6 +120,8 @@ func readTfplan(r io.Reader) (*plans.Plan, error) {
 			objKind = addrs.CheckableOutputValue
 		case planproto.CheckResults_CHECK:
 			objKind = addrs.CheckableCheck
+		case planproto.CheckResults_INPUT_VARIABLE:
+			objKind = addrs.CheckableInputVariable
 		default:
 			return nil, fmt.Errorf("aggregate check results for %s have unsupported object kind %s", rawCRs.ConfigAddr, objKind)
 		}
@@ -427,6 +429,13 @@ func changeFromTfplan(rawChange *planproto.Change) (*plans.ChangeSrc, error) {
 		}
 	}
 
+	if rawChange.Importing != nil {
+		ret.Importing = &plans.ImportingSrc{
+			ID: rawChange.Importing.Id,
+		}
+	}
+	ret.GeneratedConfig = rawChange.GeneratedConfig
+
 	sensitive := cty.NewValueMarks(marks.Sensitive)
 	beforeValMarks, err := pathValueMarksFromTfplan(rawChange.BeforeSensitivePaths, sensitive)
 	if err != nil {
@@ -538,6 +547,8 @@ func writeTfplan(plan *plans.Plan, w io.Writer) error {
 				pcrs.Kind = planproto.CheckResults_OUTPUT_VALUE
 			case addrs.CheckableCheck:
 				pcrs.Kind = planproto.CheckResults_CHECK
+			case addrs.CheckableInputVariable:
+				pcrs.Kind = planproto.CheckResults_INPUT_VARIABLE
 			default:
 				return fmt.Errorf("checkable configuration %s has unsupported object type kind %s", configElem.Key, kind)
 			}
@@ -758,6 +769,14 @@ func changeToTfplan(change *plans.ChangeSrc) (*planproto.Change, error) {
 	}
 	ret.BeforeSensitivePaths = beforeSensitivePaths
 	ret.AfterSensitivePaths = afterSensitivePaths
+
+	if change.Importing != nil {
+		ret.Importing = &planproto.Importing{
+			Id: change.Importing.ID,
+		}
+
+	}
+	ret.GeneratedConfig = change.GeneratedConfig
 
 	switch change.Action {
 	case plans.NoOp:

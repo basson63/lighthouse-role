@@ -1,5 +1,5 @@
 // Copyright (c) HashiCorp, Inc.
-// SPDX-License-Identifier: MPL-2.0
+// SPDX-License-Identifier: BUSL-1.1
 
 package cloud
 
@@ -7,7 +7,6 @@ import (
 	"bytes"
 	"context"
 	"encoding/base64"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -22,7 +21,6 @@ import (
 	tfe "github.com/hashicorp/go-tfe"
 	"github.com/mitchellh/copystructure"
 
-	"github.com/hashicorp/terraform/internal/command/jsonformat"
 	tfversion "github.com/hashicorp/terraform/version"
 )
 
@@ -36,6 +34,7 @@ type MockClient struct {
 	TaskStages            *MockTaskStages
 	RedactedPlans         *MockRedactedPlans
 	PolicyChecks          *MockPolicyChecks
+	Projects              *MockProjects
 	Runs                  *MockRuns
 	RunEvents             *MockRunEvents
 	StateVersions         *MockStateVersions
@@ -54,6 +53,7 @@ func NewMockClient() *MockClient {
 	c.TaskStages = newMockTaskStages(c)
 	c.PolicySetOutcomes = newMockPolicySetOutcomes(c)
 	c.PolicyChecks = newMockPolicyChecks(c)
+	c.Projects = newMockProjects(c)
 	c.Runs = newMockRuns(c)
 	c.RunEvents = newMockRunEvents(c)
 	c.StateVersions = newMockStateVersions(c)
@@ -208,6 +208,14 @@ func (m *MockConfigurationVersions) Create(ctx context.Context, workspaceID stri
 		ID:        id,
 		Status:    tfe.ConfigurationPending,
 		UploadURL: url,
+	}
+
+	if options.Provisional != nil && *options.Provisional {
+		cv.Provisional = true
+	}
+
+	if options.Speculative != nil && *options.Speculative {
+		cv.Speculative = true
 	}
 
 	m.configVersions[cv.ID] = cv
@@ -468,13 +476,13 @@ func (m *MockOrganizations) ReadRunQueue(ctx context.Context, name string, optio
 
 type MockRedactedPlans struct {
 	client        *MockClient
-	redactedPlans map[string]*jsonformat.Plan
+	redactedPlans map[string][]byte
 }
 
 func newMockRedactedPlans(client *MockClient) *MockRedactedPlans {
 	return &MockRedactedPlans{
 		client:        client,
-		redactedPlans: make(map[string]*jsonformat.Plan),
+		redactedPlans: make(map[string][]byte),
 	}
 }
 
@@ -495,23 +503,17 @@ func (m *MockRedactedPlans) create(cvID, workspaceID, planID string) error {
 		return err
 	}
 
-	raw, err := ioutil.ReadAll(redactedPlanFile)
+	raw, err := io.ReadAll(redactedPlanFile)
 	if err != nil {
 		return err
 	}
 
-	redactedPlan := &jsonformat.Plan{}
-	err = json.Unmarshal(raw, redactedPlan)
-	if err != nil {
-		return err
-	}
-
-	m.redactedPlans[planID] = redactedPlan
+	m.redactedPlans[planID] = raw
 
 	return nil
 }
 
-func (m *MockRedactedPlans) Read(ctx context.Context, hostname, token, planID string) (*jsonformat.Plan, error) {
+func (m *MockRedactedPlans) Read(ctx context.Context, hostname, token, planID string) ([]byte, error) {
 	if p, ok := m.redactedPlans[planID]; ok {
 		return p, nil
 	}
@@ -521,7 +523,7 @@ func (m *MockRedactedPlans) Read(ctx context.Context, hostname, token, planID st
 type MockPlans struct {
 	client      *MockClient
 	logs        map[string]string
-	planOutputs map[string]string
+	planOutputs map[string][]byte
 	plans       map[string]*tfe.Plan
 }
 
@@ -529,7 +531,7 @@ func newMockPlans(client *MockClient) *MockPlans {
 	return &MockPlans{
 		client:      client,
 		logs:        make(map[string]string),
-		planOutputs: make(map[string]string),
+		planOutputs: make(map[string][]byte),
 		plans:       make(map[string]*tfe.Plan),
 	}
 }
@@ -556,6 +558,17 @@ func (m *MockPlans) create(cvID, workspaceID string) (*tfe.Plan, error) {
 		w.WorkingDirectory,
 		"plan.log",
 	)
+
+	// Try to load unredacted json output, if it exists
+	outputPath := filepath.Join(
+		m.client.ConfigurationVersions.uploadPaths[cvID],
+		w.WorkingDirectory,
+		"plan-unredacted.json",
+	)
+	if outBytes, err := os.ReadFile(outputPath); err == nil {
+		m.planOutputs[p.ID] = outBytes
+	}
+
 	m.plans[p.ID] = p
 
 	return p, nil
@@ -616,7 +629,7 @@ func (m *MockPlans) ReadJSONOutput(ctx context.Context, planID string) ([]byte, 
 		return nil, tfe.ErrResourceNotFound
 	}
 
-	return []byte(planOutput), nil
+	return planOutput, nil
 }
 
 type MockTaskStages struct {
@@ -936,6 +949,102 @@ func (m *MockPolicyChecks) Logs(ctx context.Context, policyCheckID string) (io.R
 	return bytes.NewBuffer(logs), nil
 }
 
+type MockProjects struct {
+	client   *MockClient
+	projects map[string]*tfe.Project
+}
+
+func newMockProjects(client *MockClient) *MockProjects {
+	return &MockProjects{
+		client:   client,
+		projects: make(map[string]*tfe.Project),
+	}
+}
+
+func (m *MockProjects) Create(ctx context.Context, organization string, options tfe.ProjectCreateOptions) (*tfe.Project, error) {
+	id := GenerateID("prj-")
+
+	p := &tfe.Project{
+		ID:   id,
+		Name: options.Name,
+	}
+
+	m.projects[p.ID] = p
+
+	return p, nil
+}
+
+func (m *MockProjects) List(ctx context.Context, organization string, options *tfe.ProjectListOptions) (*tfe.ProjectList, error) {
+	pl := &tfe.ProjectList{}
+
+	for _, project := range m.projects {
+		pc, err := copystructure.Copy(project)
+		if err != nil {
+			panic(err)
+		}
+		pl.Items = append(pl.Items, pc.(*tfe.Project))
+	}
+
+	pl.Pagination = &tfe.Pagination{
+		CurrentPage:  1,
+		NextPage:     1,
+		PreviousPage: 1,
+		TotalPages:   1,
+		TotalCount:   len(pl.Items),
+	}
+
+	return pl, nil
+}
+
+func (m *MockProjects) Read(ctx context.Context, projectID string) (*tfe.Project, error) {
+	p, ok := m.projects[projectID]
+	if !ok {
+		return nil, tfe.ErrResourceNotFound
+	}
+
+	// we must return a copy for the client
+	pc, err := copystructure.Copy(p)
+	if err != nil {
+		panic(err)
+	}
+
+	return pc.(*tfe.Project), nil
+}
+
+func (m *MockProjects) Update(ctx context.Context, projectID string, options tfe.ProjectUpdateOptions) (*tfe.Project, error) {
+	p, ok := m.projects[projectID]
+	if !ok {
+		return nil, tfe.ErrResourceNotFound
+	}
+
+	p.Name = *options.Name
+
+	// we must return a copy for the client
+	pc, err := copystructure.Copy(p)
+	if err != nil {
+		panic(err)
+	}
+
+	return pc.(*tfe.Project), nil
+}
+
+func (m *MockProjects) Delete(ctx context.Context, projectID string) error {
+	var p *tfe.Project = nil
+	for _, p := range m.projects {
+		if p.ID == projectID {
+
+			break
+		}
+	}
+	if p == nil {
+		return tfe.ErrResourceNotFound
+	}
+
+	delete(m.projects, p.Name)
+
+	return nil
+}
+
 type MockRuns struct {
 	sync.Mutex
 
@@ -1011,16 +1120,17 @@ func (m *MockRuns) Create(ctx context.Context, options tfe.RunCreateOptions) (*t
 	}
 
 	r := &tfe.Run{
-		ID:           GenerateID("run-"),
-		Actions:      &tfe.RunActions{IsCancelable: true},
-		Apply:        a,
-		CostEstimate: ce,
-		HasChanges:   false,
-		Permissions:  &tfe.RunPermissions{},
-		Plan:         p,
-		ReplaceAddrs: options.ReplaceAddrs,
-		Status:       tfe.RunPending,
-		TargetAddrs:  options.TargetAddrs,
+		ID:                    GenerateID("run-"),
+		Actions:               &tfe.RunActions{IsCancelable: true},
+		Apply:                 a,
+		CostEstimate:          ce,
+		HasChanges:            false,
+		Permissions:           &tfe.RunPermissions{},
+		Plan:                  p,
+		ReplaceAddrs:          options.ReplaceAddrs,
+		Status:                tfe.RunPending,
+		TargetAddrs:           options.TargetAddrs,
+		AllowConfigGeneration: options.AllowConfigGeneration,
 	}
 
 	if options.Message != nil {
@@ -1041,6 +1151,10 @@ func (m *MockRuns) Create(ctx context.Context, options tfe.RunCreateOptions) (*t
 
 	if options.RefreshOnly != nil {
 		r.RefreshOnly = *options.RefreshOnly
+	}
+
+	if options.AllowConfigGeneration != nil && *options.AllowConfigGeneration {
+		r.Plan.GeneratedConfiguration = true
 	}
 
 	w, ok := m.client.Workspaces.workspaceIDs[options.Workspace.ID]
@@ -1080,7 +1194,7 @@ func (m *MockRuns) Read(ctx context.Context, runID string) (*tfe.Run, error) {
 	return m.ReadWithOptions(ctx, runID, nil)
 }
 
-func (m *MockRuns) ReadWithOptions(ctx context.Context, runID string, _ *tfe.RunReadOptions) (*tfe.Run, error) {
+func (m *MockRuns) ReadWithOptions(ctx context.Context, runID string, options *tfe.RunReadOptions) (*tfe.Run, error) {
 	m.Lock()
 	defer m.Unlock()
 
@@ -1104,18 +1218,23 @@ func (m *MockRuns) ReadWithOptions(ctx context.Context, runID string, _ *tfe.Run
 	}
 
 	logs, _ := ioutil.ReadFile(m.client.Plans.logs[r.Plan.LogReadURL])
-	if r.Status == tfe.RunPlanning && r.Plan.Status == tfe.PlanFinished {
-		if r.IsDestroy ||
-			bytes.Contains(logs, []byte("1 to add, 0 to change, 0 to destroy")) ||
-			bytes.Contains(logs, []byte("1 to add, 1 to change, 0 to destroy")) {
+	if (r.Status == tfe.RunPlanning || r.Status == tfe.RunPlannedAndSaved) && r.Plan.Status == tfe.PlanFinished {
+		hasChanges := r.IsDestroy ||
+			bytes.Contains(logs, []byte("1 to add")) ||
+			bytes.Contains(logs, []byte("1 to change")) ||
+			bytes.Contains(logs, []byte("1 to import"))
+		if hasChanges {
 			r.Actions.IsCancelable = false
 			r.Actions.IsConfirmable = true
 			r.HasChanges = true
+			r.Plan.HasChanges = true
 			r.Permissions.CanApply = true
 		}
 
-		if bytes.Contains(logs, []byte("null_resource.foo: 1 error")) ||
-			bytes.Contains(logs, []byte("Error: Unsupported block type")) {
+		hasError := bytes.Contains(logs, []byte("null_resource.foo: 1 error")) ||
+			bytes.Contains(logs, []byte("Error: Unsupported block type")) ||
+			bytes.Contains(logs, []byte("Error: Conflicting configuration arguments"))
+		if hasError {
 			r.Actions.IsCancelable = false
 			r.HasChanges = false
 			r.Status = tfe.RunErrored
@@ -1127,8 +1246,22 @@ func (m *MockRuns) ReadWithOptions(ctx context.Context, runID string, _ *tfe.Run
 	if err != nil {
 		panic(err)
 	}
+	r = rc.(*tfe.Run)
 
-	return rc.(*tfe.Run), nil
+	// After copying, handle includes... or at least, any includes we're known to rely on.
+	if options != nil {
+		for _, n := range options.Include {
+			switch n {
+			case tfe.RunWorkspace:
+				ws, ok := m.client.Workspaces.workspaceIDs[r.Workspace.ID]
+				if ok {
+					r.Workspace = ws
+				}
+			}
+		}
+	}
+
+	return r, nil
 }
 
 func (m *MockRuns) Apply(ctx context.Context, runID string, options tfe.RunApplyOptions) error {
@@ -1245,6 +1378,7 @@ func (m *MockStateVersions) Create(ctx context.Context, workspaceID string, opti
 	sv := &tfe.StateVersion{
 		ID:          id,
 		DownloadURL: url,
+		UploadURL:   fmt.Sprintf("/_archivist/upload/%s", id),
 		Serial:      *options.Serial,
 	}
 
@@ -1252,13 +1386,19 @@ func (m *MockStateVersions) Create(ctx context.Context, workspaceID string, opti
 	if err != nil {
 		return nil, err
 	}
-
 	m.states[sv.DownloadURL] = state
 	m.outputStates[sv.ID] = []byte(*options.JSONStateOutputs)
 	m.stateVersions[sv.ID] = sv
 	m.workspaces[workspaceID] = append(m.workspaces[workspaceID], sv.ID)
 
 	return sv, nil
+}
+
+func (m *MockStateVersions) Upload(ctx context.Context, workspaceID string, options tfe.StateVersionUploadOptions) (*tfe.StateVersion, error) {
+	createOptions := options.StateVersionCreateOptions
+	createOptions.State = tfe.String(base64.StdEncoding.EncodeToString(options.RawState))
+
+	return m.Create(ctx, workspaceID, createOptions)
 }
 
 func (m *MockStateVersions) Read(ctx context.Context, svID string) (*tfe.StateVersion, error) {
@@ -1518,6 +1658,12 @@ func (m *MockWorkspaces) Create(ctx context.Context, organization string, option
 			CanQueueRun:    true,
 			CanForceDelete: tfe.Bool(true),
 		},
+		Organization: &tfe.Organization{
+			Name: organization,
+		},
+	}
+	if options.Project != nil {
+		w.Project = options.Project
 	}
 	if options.AutoApply != nil {
 		w.AutoApply = *options.AutoApply
