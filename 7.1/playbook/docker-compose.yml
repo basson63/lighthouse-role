@@ -1,0 +1,19 @@
+version : "2"
+services:
+  centos7:
+    image: centos:7
+    container_name: centos7
+    restart: unless-stopped
+    entrypoint: "sleep infinity"
+
+  ubuntu:
+    image: brunneis/python:3.9.0-ubuntu
+    container_name: ubuntu
+    restart: unless-stopped
+    entrypoint: "sleep infinity"
+
+  fedora:
+    image: pycontribs/fedora
+    container_name: fedora
+    restart: unless-stopped
+    entrypoint: "sleep infinity"
