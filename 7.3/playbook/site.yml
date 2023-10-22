@@ -1,0 +1,198 @@
+---
+- name: Install Clickhouse
+  hosts: clickhouse-01
+  handlers:
+    - name: Start clickhouse service
+      become: true
+      ansible.builtin.service:
+        name: clickhouse-server
+        state: restarted
+  tasks:
+    - block:
+        - name: Get clickhouse distrib
+          ansible.builtin.get_url:
+            url: "https://packages.clickhouse.com/rpm/stable/{{ item }}-{{ clickhouse_version }}.noarch.rpm"
+            dest: "./{{ item }}-{{ clickhouse_version }}.rpm"
+          with_items: "{{ clickhouse_packages }}"
+      rescue:
+        - name: Get clickhouse distrib
+          ansible.builtin.get_url:
+            url: "https://packages.clickhouse.com/rpm/stable/clickhouse-common-static-{{ clickhouse_version }}.x86_64.rpm"
+            dest: "./clickhouse-common-static-{{ clickhouse_version }}.rpm"
+    - name: Install clickhouse packages
+      become: true
+      ansible.builtin.yum:
+        name:
+          - clickhouse-common-static-{{ clickhouse_version }}.rpm
+          - clickhouse-client-{{ clickhouse_version }}.rpm
+          - clickhouse-server-{{ clickhouse_version }}.rpm
+      notify: Start clickhouse service
+    - name: Flush handlers
+      meta: flush_handlers
+    - name: Create database
+      ansible.builtin.command: "clickhouse-client -q 'create database logs;'"
+      register: create_db
+      failed_when: create_db.rc != 0 and create_db.rc !=82
+      changed_when: create_db.rc == 0
+
+    - name: Create table
+      ansible.builtin.command: "clickhouse-client -q 'create table if not exists logs.vector_logs ( message String ) ENGINE = MergeTree() ORDER BY tuple();'"
+      register: create_table
+      failed_when: create_table.rc != 0 and create_table.rc !=82
+      changed_when: create_table.rc == 1
+
+#open port for  clickhouse-server
+#    - name: Open port 8123
+#      ansible.builtin.command: "sudo firewall-cmd --add-port=8123/tcp"
+#      register: open_port
+#      failed_when: open_port.rc != 0 
+#      changed_when: open_port.rc == 1 
+
+    - name: Create clickhouse-server config
+      become: true
+      ansible.builtin.template:
+        src: config.xml.j2
+        dest: /etc/clickhouse-server/config.xml
+        mode: "0755"
+        owner: "{{ ansible_user_id }}"
+        group: "{{ ansible_user_gid }}"
+        backup: true
+
+    - name: ch-server restart
+      become: true
+      ansible.builtin.service:
+        name: clickhouse-server
+        state: restarted
+    
+- name: Install Vector
+  hosts: vector-01
+  handlers:
+    - name: Start Vector service
+      become: true
+      ansible.builtin.service:
+        name: vector
+        state: restarted
+  tasks:
+    - name: Get package vector
+      ansible.builtin.get_url:
+        url: https://packages.timber.io/vector/{{ vector_version }}/vector-{{ vector_version }}-1.x86_64.rpm
+        dest: ./vector-{{ vector_version }}-1.x86_64.rpm
+
+    - name: Install vector package
+      become: true
+      ansible.builtin.yum:
+        name: vector-{{ vector_version }}-1.x86_64.rpm
+        state: present
+      notify: Start Vector service
+
+    - name: Vector config file
+      become: true
+      ansible.builtin.template:
+        src: vector.toml.j2
+        dest: /etc/vector/vector.toml
+        mode: "0755"
+        owner: "{{ ansible_user_id }}"
+        group: "{{ ansible_user_gid }}"
+
+    - name: Vector systemd service file
+      become: true
+      ansible.builtin.template:
+        src: vector.service.j2
+        dest: /usr/lib/systemd/system/vector.service
+        mode: "0755"
+        owner: "{{ ansible_user_id }}"
+        group: "{{ ansible_user_gid }}"
+        backup: true
+      notify: Start Vector service
+
+    - name: Add epel-release repo
+      become: true
+      yum:
+        name: epel-release
+        state: present
+    - name: Install nginx
+      become: true
+      yum:
+        name: nginx
+        state: present
+
+    - name: Create nginx config
+      become: true
+      ansible.builtin.template:
+        src: nginx.conf.j2
+        dest: /etc/nginx/nginx.conf
+        mode: 0755
+        backup: true
+
+    - name: Start NGiNX
+      become: true
+      service:
+        name: nginx
+        enabled: true
+        state: restarted
+      notify: Start Vector service
+
+
+- name: Install nginx
+  hosts: lighthouse-01
+  handlers:
+    - name: nginx start
+      become: true
+      service:
+        name: nginx
+        enabled: true
+        state: started
+
+  tasks:
+    - name: Install epel-release
+      become: true
+      ansible.builtin.yum:
+        name: epel-release
+        state: present
+
+    - name: Install nginx
+      become: true
+      ansible.builtin.yum:
+        name: nginx
+        state: present
+
+# open port for web server 
+#    - name: Open port 80
+#      ansible.builtin.command: "sudo firewall-cmd --add-port=80/tcp"
+#      register: open_port
+#      failed_when: open_port.rc != 0 
+#      changed_when: open_port.rc == 1 
+
+- name: Install lighthouse
+  hosts: lighthouse-01
+  handlers:
+    - name: nginx restarted
+      become: true
+      service:
+        name: nginx
+        enabled: true
+        state: restarted
+
+  pre_tasks:
+    - name: Lighthouse | Install git
+      become: true
+      ansible.builtin.yum:
+        name: git
+        state: present
+
+  tasks:
+    - name: Lighthouse | Clone repository
+      become: true
+      ansible.builtin.git:
+        repo: "{{ lighthouse_url }}"
+        dest: "{{ lighthouse_dir }}"
+        version: master
+  
+    - name: Create Lighthouse config
+      become: true
+      ansible.builtin.template:
+        src: nginx_lighthouse.conf.j2
+        dest: /etc/nginx/nginx.conf
+        mode: 0755
+        backup: true
+      notify: nginx restarted
