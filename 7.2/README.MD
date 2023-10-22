@@ -1,250 +1,163 @@
-# Домашнее задание к занятию 2 «Работа с Playbook»
- 
-## Подготовка к выполнению
+# Домашнее задание к занятию "08.02 Работа с Playbook"
 
-1. * Необязательно. Изучите, что такое [ClickHouse](https://www.youtube.com/watch?v=fjTNS2zkeBs) и [Vector](https://www.youtube.com/watch?v=CgEhyffisLY).
-2. Создайте свой публичный репозиторий на GitHub с произвольным именем или используйте старый.
-3. Скачайте [Playbook](./playbook/) из репозитория с домашним заданием и перенесите его в свой репозиторий.
-4. Подготовьте хосты в соответствии с группами из предподготовленного playbook.
-```yml
-version : "2.4"
-services:
- centos7-clickhouse:
-    image: pycontribs/centos:7
-    container_name: clickhouse-01
-    restart: unless-stopped
-    entrypoint: "sleep infinity"
- centos7-vector:
-    image: pycontribs/centos:7
-    container_name: vector-01
-    restart: unless-stopped
-    entrypoint: "sleep infinity"
+## Задача 1. Приготовьте свой собственный inventory файл prod.yml.
 ```
-
-## Основная часть
-
-1. Подготовьте свой inventory-файл `prod.yml`.
-```yml
+basson63@virtual-machine:~/devops-netology-29/7.2/playbook_vector$ cat inventory/prod.yml 
 ---
-clickhouse:
-  hosts:
-    clickhouse-01:
-      ansible_connection: docker
 vector:
   hosts:
-    vector-01:
+    vector-test:
       ansible_connection: docker
 ```
-2. Допишите playbook: нужно сделать ещё один play, который устанавливает и настраивает [vector](https://vector.dev).
-
-```yml
+## Задача 2. Допишите playbook: нужно сделать ещё один play, который устанавливает и настраивает vector.
+## Задача 3. При создании tasks рекомендую использовать модули: get_url, template, unarchive, file.
+## Задача 4. Tasks должны: скачать нужной версии дистрибутив, выполнить распаковку в выбранную директорию, установить vector.
+```
 ---
-- name: Install Clickhouse
-  hosts: clickhouse-01
-  handlers:
-    - name: Start clickhouse service
-      become: true
-      ansible.builtin.service:
-        name: clickhouse-server
-        state: restarted
-  tasks:
-    - block:
-        - name: Get clickhouse distrib
-          ansible.builtin.get_url:
-            url: "https://packages.clickhouse.com/rpm/stable/{{ item }}-{{ clickhouse_version }}.noarch.rpm"
-            dest: "./{{ item }}-{{ clickhouse_version }}.rpm"
-          with_items: "{{ clickhouse_packages }}"
-      rescue:
-        - name: Get clickhouse distrib
-          ansible.builtin.get_url:
-            url: "https://packages.clickhouse.com/rpm/stable/clickhouse-common-static-{{ clickhouse_version }}.x86_64.rpm"
-            dest: "./clickhouse-common-static-{{ clickhouse_version }}.rpm"
-    - name: Install clickhouse packages
-      become: true
-      ansible.builtin.yum:
-        name:
-          - clickhouse-common-static-{{ clickhouse_version }}.rpm
-          - clickhouse-client-{{ clickhouse_version }}.rpm
-          - clickhouse-server-{{ clickhouse_version }}.rpm
-      notify: Start clickhouse service
-    - name: Flush handlers
-      meta: flush_handlers
-    - name: Create database
-      ansible.builtin.command: "clickhouse-client -q 'create database logs;'"
-      register: create_db
-      failed_when: create_db.rc != 0 and create_db.rc !=82
-      changed_when: create_db.rc == 0
-
+basson63@virtual-machine:~/devops-netology-29/7.2/playbook_vector$  cat site.yml 
+---
 - name: Install Vector
-  hosts: vector-01
-  handlers:
-    - name: Start vector service
-      become: true
-      ansible.builtin.service:
-        name: vector
-        state: restarted
+  hosts: vector
   tasks:
-     - name: Get package vector
-       ansible.builtin.get_url:
-         url: https://packages.timber.io/vector/{{ vector_version }}/vector-{{ vector_version }}-1.x86_64.rpm
-         dest: ./vector-{{ vector_version }}-1.x86_64.rpm
-     - name: Install vector package
-       become: true
-       ansible.builtin.yum:
-         name: vector-latest-1.x86_64.rpm
-       notify: Start vector service
-```
+    - name: Get Vector distrib
+      ansible.builtin.get_url:
+        url: "https://packages.timber.io/vector/{{ vector_version }}/vector-{{
+            vector_version }}-x86_64-unknown-linux-gnu.tar.gz"
+        dest: "./vector-{{ vector_version }}-x86_64-unknown-linux-gnu.tar.gz"
+        mode: 0755
+        timeout: 90
+        force: true
+      tags: download
+    - name: Create directory for Vector
+      ansible.builtin.file:
+        state: directory
+        path: "{{ vector_dir }}"
+        mode: 0755
+      tags: CD
+    - name: Extract Vector
+      ansible.builtin.unarchive:
+        copy: false
+        src: "/vector-{{ vector_version }}-x86_64-unknown-linux-gnu.tar.gz"
+        dest: "{{ vector_dir }}"
+        extra_opts: [--strip-components=2]
+        creates: "{{ vector_dir }}/bin/vector"
+      tags: extract
+    - name: environment Vector
+      ansible.builtin.template:
+        src: templates/vector.sh.j2
+        dest: /etc/profile.d/vector.sh
+        mode: 0755
+      tags: env
 
-3. При создании tasks рекомендую использовать модули: `get_url`, `template`, `unarchive`, `file`.
-4. Tasks должны: скачать дистрибутив нужной версии, выполнить распаковку в выбранную директорию, установить vector.
-5. Запустите `ansible-lint site.yml` и исправьте ошибки, если они есть.
-
-```zsh
-спасибо классная утилита, помогла найти где лишнии пробелы
-```
-6. Попробуйте запустить playbook на этом окружении с флагом `--check`.
-```
-sudo ansible-playbook -i ./inventory/prod.yml site.yml --check
-
-PLAY [Install Clickhouse] **************************************************************************
-
-TASK [Gathering Facts] *****************************************************************************
-ok: [clickhouse-01]
-
-TASK [Get clickhouse distrib] **********************************************************************
-ok: [clickhouse-01] => (item=clickhouse-client)
-ok: [clickhouse-01] => (item=clickhouse-server)
-failed: [clickhouse-01] (item=clickhouse-common-static) => {"ansible_loop_var": "item", "changed": false, "dest": "./clickhouse-common-static-22.3.3.44.rpm", "elapsed": 0, "gid": 0, "group": "root", "item": "clickhouse-common-static", "mode": "0644", "msg": "Request failed", "owner": "root", "response": "HTTP Error 404: Not Found", "size": 246310036, "state": "file", "status_code": 404, "uid": 0, "url": "https://packages.clickhouse.com/rpm/stable/clickhouse-common-static-22.3.3.44.noarch.rpm"}
-
-TASK [Get clickhouse distrib] **********************************************************************
-ok: [clickhouse-01]
-
-TASK [Install clickhouse packages] *****************************************************************
-ok: [clickhouse-01]
-
-TASK [Flush handlers] ******************************************************************************
-
-TASK [Create database] *****************************************************************************
-skipping: [clickhouse-01]
-
-PLAY [Install Vector] ******************************************************************************
-
-TASK [Gathering Facts] *****************************************************************************
-ok: [vector-01]
-
-TASK [Get package vector] **************************************************************************
-ok: [vector-01]
-
-TASK [Install vector package] **********************************************************************
-ok: [vector-01]
-
-PLAY RECAP *****************************************************************************************
-clickhouse-01              : ok=3    changed=0    unreachable=0    failed=0    skipped=1    rescued=1    ignored=0
-vector-01                  : ok=3    changed=0    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0
-```
-
-7. Запустите playbook на `prod.yml` окружении с флагом `--diff`. Убедитесь, что изменения на системе произведены.
-```bash
-sudo ansible-playbook -i ./inventory/prod.yml site.yml --diff
-[sudo] пароль для vit:
-
-PLAY [Install Clickhouse] **************************************************************************
-
-TASK [Gathering Facts] *****************************************************************************
-ok: [clickhouse-01]
-
-TASK [Get clickhouse distrib] **********************************************************************
-changed: [clickhouse-01] => (item=clickhouse-client)
-changed: [clickhouse-01] => (item=clickhouse-server)
-failed: [clickhouse-01] (item=clickhouse-common-static) => {"ansible_loop_var": "item", "changed": false, "dest": "./clickhouse-common-static-22.3.3.44.noarch.rpm", "elapsed": 0, "item": "clickhouse-common-static", "msg": "Request failed", "response": "HTTP Error 404: Not Found", "status_code": 404, "url": "https://packages.clickhouse.com/rpm/stable/clickhouse-common-static-22.3.3.44.noarch.rpm"}
-
-TASK [Get clickhouse distrib] **********************************************************************
-changed: [clickhouse-01]
-
-TASK [Install clickhouse packages] *****************************************************************
-ok: [clickhouse-01]
-
-TASK [Flush handlers] ******************************************************************************
-
-TASK [Create database] *****************************************************************************
-ok: [clickhouse-01]
-
-PLAY [Install Vector] ******************************************************************************
-
-TASK [Gathering Facts] *****************************************************************************
-ok: [vector-01]
-
-TASK [Get package vector] **************************************************************************
-ok: [vector-01]
-
-TASK [Install vector package] **********************************************************************
-ok: [vector-01]
-
-PLAY RECAP *****************************************************************************************
-clickhouse-01              : ok=4    changed=1    unreachable=0    failed=0    skipped=0    rescued=1    ignored=0
-vector-01                  : ok=3    changed=0    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0
-```
-
-8. Повторно запустите playbook с флагом `--diff` и убедитесь, что playbook идемпотентен.
-
-
-```bash
-sudo ansible-playbook -i ./inventory/prod.yml site.yml --diff
-
-PLAY [Install Clickhouse] **************************************************************************
-
-TASK [Gathering Facts] *****************************************************************************
-ok: [clickhouse-01]
-
-TASK [Get clickhouse distrib] **********************************************************************
-ok: [clickhouse-01] => (item=clickhouse-client)
-ok: [clickhouse-01] => (item=clickhouse-server)
-failed: [clickhouse-01] (item=clickhouse-common-static) => {"ansible_loop_var": "item", "changed": false, "dest": "./clickhouse-common-static-22.3.3.44.noarch.rpm", "elapsed": 0, "item": "clickhouse-common-static", "msg": "Request failed", "response": "HTTP Error 404: Not Found", "status_code": 404, "url": "https://packages.clickhouse.com/rpm/stable/clickhouse-common-static-22.3.3.44.noarch.rpm"}
-
-TASK [Get clickhouse distrib] **********************************************************************
-ok: [clickhouse-01]
-
-TASK [Install clickhouse packages] *****************************************************************
-ok: [clickhouse-01]
-
-TASK [Flush handlers] ******************************************************************************
-
-TASK [Create database] *****************************************************************************
-ok: [clickhouse-01]
-
-PLAY [Install Vector] ******************************************************************************
-
-TASK [Gathering Facts] *****************************************************************************
-ok: [vector-01]
-
-TASK [Get package vector] **************************************************************************
-ok: [vector-01]
-
-TASK [Install vector package] **********************************************************************
-ok: [vector-01]
-
-PLAY RECAP *****************************************************************************************
-clickhouse-01              : ok=4    changed=0    unreachable=0    failed=0    skipped=0    rescued=1    ignored=0
-vector-01                  : ok=3    changed=0    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0
 
 ```
-9. Подготовьте README.md-файл по своему playbook. В нём должно быть описано: что делает playbook, какие у него есть параметры и теги.
-
-```bash
- cat README.MD
-###Описание Playbook
-1. site.yml Устанавливает на хосты clickhouse и vector
-2. В inventory/prod.yml задаем хосты docker
-3. Поднимаем поднимаем группу хостов docker-compose.yml
-4. group_vars/clickhouse/vars.yml Переменные по версиям и устанавливаемому ПО от clickhouse
-5. group_vars/clickhouse/vars.yml Переменная по версии Vector
+```		
+basson63@virtual-machine:~/devops-netology-29/7.2/playbook_vector$  cat templates/vector.sh.j2 
+#!/usr/bin/env bash
+export VECTOR_DIR={{ vector_dir }}
+export PATH=$PATH:$VECTOR_DIR/bin
 ```
-10. Готовый playbook выложите в свой репозиторий, поставьте тег `08-ansible-02-playbook` на фиксирующий коммит, в ответ предоставьте ссылку на него.
-
+```
+basson63@virtual-machine:~/devops-netology-29/7.2/playbook_vector$  cat group_vars/vector/vars.yml 
 ---
+vector_version: "0.21.0"
+vector_dir: "/etc/vector"
 
-### Как оформить решение задания
+```
+## Задача 5. Запустите ansible-lint site.yml и исправьте ошибки, если они есть.
+```
+basson63@virtual-machine:~/devops-netology-29/7.2/playbook_vector$ ansible-lint site.yml 
+WARNING  Overriding detected file kind 'yaml' with 'playbook' for given positional argument: site.yml
 
-Выполненное домашнее задание пришлите в виде ссылки на .md-файл в вашем репозитории.
+```
+## Задача 6. Попробуйте запустить playbook на этом окружении с флагом --check.
+```
+basson63@virtual-machine:~/devops-netology-29/7.2/playbook_vector$  ansible-playbook site.yml -i inventory/prod.yml --check
 
----
+PLAY [Install Vector] ***************************************************************************************************************************************************
+
+TASK [Gathering Facts] **************************************************************************************************************************************************
+ok: [vector-test]
+
+TASK [Get Vector distrib] ***********************************************************************************************************************************************
+changed: [vector-test]
+
+TASK [Create directory for Vector] **************************************************************************************************************************************
+changed: [vector-test]
+
+TASK [Extract Vector] ***************************************************************************************************************************************************
+An exception occurred during task execution. To see the full traceback, use -vvv. The error was: NoneType: None
+fatal: [vector-test]: FAILED! => {"changed": false, "msg": "dest '/etc/vector' must be an existing dir"}
+
+PLAY RECAP **************************************************************************************************************************************************************
+vector-test                : ok=3    changed=2    unreachable=0    failed=1    skipped=0    rescued=0    ignored=0   
+
+```
+## Задача 7. Запустите playbook на prod.yml окружении с флагом --diff. Убедитесь, что изменения на системе произведены.
+```
+basson63@virtual-machine:~/devops-netology-29/7.2/playbook_vector$  ansible-playbook site.yml -i inventory/prod.yml --diff
+
+PLAY [Install Vector] ***************************************************************************************************************************************************
+
+TASK [Gathering Facts] **************************************************************************************************************************************************
+ok: [vector-test]
+
+TASK [Get Vector distrib] ***********************************************************************************************************************************************
+changed: [vector-test]
+
+TASK [Create directory for Vector] **************************************************************************************************************************************
+--- before
++++ after
+@@ -1,4 +1,4 @@
+ {
+     "path": "/etc/vector",
+-    "state": "absent"
++    "state": "directory"
+ }
+
+changed: [vector-test]
+
+TASK [Extract Vector] ***************************************************************************************************************************************************
+changed: [vector-test]
+
+TASK [environment Vector] ***********************************************************************************************************************************************
+--- before
++++ after: /home/student/.ansible/tmp/ansible-local-1342228g2nosdgt/tmp1x4z7nn7/vector.sh.j2
+@@ -0,0 +1,4 @@
++#!/usr/bin/env bash
++export VECTOR_DIR=/etc/vector
++export PATH=$PATH:$VECTOR_DIR/bin
++.vector --config /etc/vector/config/vector.toml
+
+changed: [vector-test]
+
+PLAY RECAP **************************************************************************************************************************************************************
+vector-test                : ok=5    changed=4    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0  
+```
+## Задача 8. Повторно запустите playbook с флагом --diff и убедитесь, что playbook идемпотентен.
+```
+basson63@virtual-machine:~/devops-netology-29/7.2/playbook_vector$ ansible-playbook site.yml -i inventory/prod.yml --diff
+
+PLAY [Install Vector] ***************************************************************************************************************************************************
+
+TASK [Gathering Facts] **************************************************************************************************************************************************
+ok: [vector-test]
+
+TASK [Get Vector distrib] ***********************************************************************************************************************************************
+ok: [vector-test]
+
+TASK [Create directory for Vector] **************************************************************************************************************************************
+ok: [vector-test]
+
+TASK [Extract Vector] ***************************************************************************************************************************************************
+skipping: [vector-test]
+
+TASK [environment Vector] ***********************************************************************************************************************************************
+ok: [vector-test]
+
+PLAY RECAP **************************************************************************************************************************************************************
+vector-test                : ok=4    changed=0    unreachable=0    failed=0    skipped=1    rescued=0    ignored=0   
+```
+## Задача 9.Подготовьте README.md файл по своему playbook. В нём должно быть описано: что делает playbook, какие у него есть параметры и теги.
+## Задача 10.Готовый playbook выложите в свой репозиторий, поставьте тег 08-ansible-02-playbook на фиксирующий коммит, в ответ предоставьте ссылку на него.
+```

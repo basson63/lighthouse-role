@@ -1,5 +1,5 @@
 ---
-clickhouse:
+vector:
   hosts:
-    clickhouse-01:
-      ansible_host: <IP_here>
+    vector-test:
+      ansible_connection: docker
