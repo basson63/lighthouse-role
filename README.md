@@ -9,8 +9,8 @@ Role Variables
 | Variable name | Default | Description |
 |-----------------------|----------|-------------------------|
 | lighthouse_dir  | "/usr/share/nginx/html/lighthouse" | Дериктория в которую будет установлен lighthouse |
-| lighthouse_url  | "https://github.com/VKCOM/lighthouse.git" | Ссылка, откуда для скачивания дистрибутива lighthouse |
-| lighthouse_port | "80" | Порт, на котором будет веб интерфейс отвечать |
+| lighthouse_url  | "https://github.com/VKCOM/lighthouse.git" | Ссылка, для скачивания дистрибутива lighthouse |
+| lighthouse_port | "80" | Порт, на котором будет отвечать веб интерфейс |
 
 Example Playbook
 ----------------
